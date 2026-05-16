@@ -22,24 +22,9 @@ function App() {
   }, []);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>🤖 BizLangAI</h1>
-
-      <nav style={{ marginBottom: "20px" }}>
-        <Link to="/register">Register</Link> |{" "}
-        {token ? (
-          <>
-            <Link to="/chat">Chat</Link> |{" "}
-            <button onClick={handleLogout} style={{ color: "red", background: "none", border: "none", cursor: "pointer" }}>
-              Logout
-            </button>
-          </>
-        ) : (
-          <Link to="/login">Login</Link>
-        )}
-      </nav>
-
+    <div className="min-h-screen w-full bg-[#050505] text-white selection:bg-cyan-500/30 selection:text-cyan-200">
       <Routes>
+        <Route path="/" element={<Login />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/login" element={<Login />} />
         <Route
