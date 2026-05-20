@@ -37,7 +37,7 @@ function ChatPage() {
     setPrompt("");
 
     try {
-      const res = await api.post("/api/chat", { prompt, source: "flowise" });
+      const res = await api.post("/api/chat", { prompt, source: "openai" });
 
       if (res.data.response) {
         setMessages((prev) => [...prev, { sender: "bot", text: res.data.response }]);
@@ -48,7 +48,12 @@ function ChatPage() {
       }
     } catch (err) {
       console.error("Chat Error:", err);
-      setError("❌ Connection to Neural Node lost.");
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        setError("❌ Connection to Neural Node lost.");
+      }
     } finally {
       setLoading(false);
     }
@@ -92,14 +97,14 @@ function ChatPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative z-10 w-full max-w-5xl mx-auto p-4 md:p-6 pt-8 md:pt-12 overflow-hidden">
+      <div className="flex-1 flex flex-col relative z-10 w-full max-w-5xl mx-auto p-4 md:p-6 pt-4 md:pt-6 overflow-hidden">
         
         {/* Top Control Panel: File Upload */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="mb-32 md:mb-64 lg:mb-96 flex-shrink-0 w-full relative group"
+          className="mb-6 flex-shrink-0 w-full relative group"
         >
           {/* Advanced glowing aura behind the upload panel */}
           <div className="absolute -inset-1.5 bg-gradient-to-r from-cyan-500/20 via-blue-500/10 to-transparent rounded-3xl blur-xl group-hover:opacity-100 opacity-60 transition duration-700"></div>
@@ -149,11 +154,11 @@ function ChatPage() {
                     {msg.text.includes("/static/charts/") ? (
                       <div className="space-y-4">
                         <p className="text-cyan-100/90 font-medium">{msg.text.replace(/!\[Chart\]\(.*\)/, "").trim()}</p>
-                        <div className="rounded-xl overflow-hidden border border-white/10 bg-black/50 p-2 shadow-2xl">
+                        <div className="rounded-xl overflow-hidden border border-white/10 bg-black/50 p-2 shadow-2xl flex justify-center">
                           <img
                             src={`${API_URL}${msg.text.match(/\(\/static\/charts\/.*\.png\)/)?.[0].slice(1, -1)}`}
                             alt="AI Generated Chart"
-                            className="w-full h-auto rounded-lg"
+                            className="w-full max-h-[350px] object-contain rounded-lg bg-white/5"
                           />
                         </div>
                       </div>
@@ -185,7 +190,7 @@ function ChatPage() {
       </div>
 
       {/* Floating Input Area */}
-      <div className="absolute bottom-0 w-full left-0 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-10 pb-3 px-4 z-30">
+      <div className="fixed bottom-0 w-full left-0 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-10 pb-2 px-4 z-30">
         <div className="max-w-4xl mx-auto relative">
           
           {/* Error Message Tooltip */}
@@ -222,7 +227,7 @@ function ChatPage() {
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-1" />}
             </button>
           </form>
-          <p className="text-center text-[10px] text-neutral-600 font-medium mt-3">
+          <p className="text-center text-[10px] text-neutral-600 font-medium mt-1 mb-1">
             BizLangAI may produce inaccurate information about people, places, or facts.
           </p>
         </div>

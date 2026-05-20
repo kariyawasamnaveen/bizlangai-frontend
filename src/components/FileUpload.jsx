@@ -31,27 +31,54 @@ function FileUpload() {
         setMessage("❌ Upload failed. Data stream corrupted.");
       }
     } catch (err) {
-      setMessage("❌ Upload failed. Connection error.");
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      } else {
+        setMessage("❌ Upload failed. Connection error.");
+      }
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      if (![
-        "text/csv",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "text/plain"
-      ].includes(selectedFile.type)) {
+      const ext = selectedFile.name.split('.').pop().toLowerCase();
+      if (!["csv", "xlsx", "pdf", "docx", "txt"].includes(ext)) {
         alert("❌ Please upload a CSV, Excel, PDF, Word, or Text file.");
         return;
       }
       setFile(selectedFile);
-      setMessage(""); // Reset message on new file selection
+      setMessage("");
+
+      // Automatically trigger upload
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      try {
+        const res = await api.post("/api/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+            
+        if (res.data.message) {
+          setMessage("✅ Knowledge Base Updated Successfully");
+          setColumns(res.data.columns || []);
+        } else {
+          setMessage("❌ Upload failed. Data stream corrupted.");
+        }
+      } catch (err) {
+        if (err?.response?.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+        } else {
+          setMessage("❌ Upload failed. Connection error.");
+        }
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -110,9 +137,15 @@ function FileUpload() {
             </button>
 
             <button 
-              type="submit" 
-              disabled={!file || isUploading}
-              className="h-12 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-sm tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              type={file ? "submit" : "button"}
+              onClick={(e) => {
+                if (!file) {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              disabled={isUploading}
+              className={`h-12 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-sm tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${!file ? "opacity-90" : ""}`}
             >
               {isUploading ? "Syncing..." : "Upload"}
               {!isUploading && <UploadCloud size={16} />}
